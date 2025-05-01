@@ -1,4 +1,3 @@
-// src/components/PortDisplay.tsx
 import React from "react";
 import { Circle, Text as SvgText } from "react-native-svg";
 import type { ResourceType } from "../logic/catanLogic";

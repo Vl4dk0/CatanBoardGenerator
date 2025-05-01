@@ -1,23 +1,19 @@
-// app/_layout.tsx (Example structure)
+// app/_layout.tsx
 import { Stack } from "expo-router";
+import { ThemeProvider } from "../src/context/ThemeContext"; // Adjust path
 
 export default function RootLayout() {
   return (
-    <Stack>
-      {/* Find the screen for your index route */}
-      <Stack.Screen
-        name="index"
-        options={{
-          // Remove the title or set headerShown to false
-          // Option 1: Remove title text
-          // title: '', // Set an empty title
-          // headerTitle: '', // Alternative way
-
-          // Option 2: Hide the header entirely
-          headerShown: false,
-        }}
-      />
-      {/* Other screens if you have them */}
-    </Stack>
+    // Wrap the entire layout with the ThemeProvider
+    <ThemeProvider>
+      <Stack>
+        <Stack.Screen
+          name="index"
+          options={{
+            headerShown: false, // Keep header hidden
+          }}
+        />
+      </Stack>
+    </ThemeProvider>
   );
 }

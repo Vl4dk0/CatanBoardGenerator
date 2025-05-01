@@ -1,8 +1,7 @@
-// src/constants.ts
 import type { ResourceType } from "./logic/catanLogic"; // Adjust path if logic file is elsewhere
 
 export const resourceColors: Record<ResourceType, string> = {
-  wood: "#023020", // Dark Green
+  wood: "#215c2a", // Dark Green
   brick: "#B22222", // Firebrick Red
   sheep: "#90EE90", // Light Green
   wheat: "#FFD700", // Gold (Yellow)
@@ -33,6 +32,45 @@ export const portResourceText: Partial<Record<ResourceType, string>> = {
   wheat: "Wh",
   stone: "St",
   "?": "3:1", // Indicate 3:1 trade for generic ports
+};
+
+// --- Theme Colors Interface ---
+export interface ThemeColors {
+  background: string;
+  text: string;
+  buttonBackground: string;
+  buttonText: string;
+  buttonPressedBackground: string;
+  svgBackground: string;
+  svgBorder: string;
+  switchThumb: string;
+  switchTrack: string;
+}
+
+// --- Light Theme ---
+export const lightThemeColors: ThemeColors = {
+  background: "#F5FCFF", // Light blue/white
+  text: "#111827", // Dark gray
+  buttonBackground: "#3b82f6", // Blue
+  buttonText: "#FFFFFF", // White
+  buttonPressedBackground: "#2563eb", // Darker Blue
+  svgBackground: "#e0f7fa", // Light cyan
+  svgBorder: "#cccccc", // Light gray
+  switchThumb: "#f4f3f4",
+  switchTrack: "#767577",
+};
+
+// --- Dark Theme ---
+export const darkThemeColors: ThemeColors = {
+  background: "#121212", // Very dark gray
+  text: "#E5E7EB", // Light gray
+  buttonBackground: "#60a5fa", // Lighter Blue
+  buttonText: "#111827", // Dark Gray
+  buttonPressedBackground: "#93c5fd", // Even Lighter Blue
+  svgBackground: "#1f2937", // Dark slate gray
+  svgBorder: "#4b5563", // Medium gray
+  switchThumb: "#3b82f6", // Blue
+  switchTrack: "#4b5563",
 };
 
 // --- SVG Rendering Configuration ---

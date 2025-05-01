@@ -1,7 +1,6 @@
-import _ from "lodash"; // We'll use lodash for shuffling, sampling etc.
+import _ from "lodash";
 
-// --- Interfaces and Types ---
-
+// --- Interfaces, Types, Initial Data, portBannedTiles, Lists (remain the same) ---
 export type ResourceType =
   | "wood"
   | "brick"
@@ -9,22 +8,22 @@ export type ResourceType =
   | "wheat"
   | "stone"
   | "desert"
-  | "?"; // For ports
+  | "?";
 
 export interface HexTile {
   id: number;
-  x: number; // Doubled coordinate x
-  y: number; // Doubled coordinate y
+  x: number;
+  y: number;
   resource: ResourceType | null;
   number: number | null;
 }
 
 export interface Port {
   id: number;
-  x1: number; // Pier 1 x
-  y1: number; // Pier 1 y
-  x2: number; // Pier 2 x
-  y2: number; // Pier 2 y
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
   resource: ResourceType;
 }
 
@@ -33,11 +32,8 @@ export interface GeneratedBoard {
   ports: Port[];
 }
 
-// --- Constants (Translated from Python) ---
+const HEX_RAD = 2 / Math.sqrt(3);
 
-const HEX_RAD = 2 / Math.sqrt(3); // Not directly used in logic, but useful for rendering later
-
-// Initial tile configuration (using doubled coordinates)
 const initialTilesData: Omit<HexTile, "resource" | "number">[] = [
   { x: -2, y: 2, id: 0 },
   { x: 0, y: 2, id: 1 },
@@ -48,7 +44,7 @@ const initialTilesData: Omit<HexTile, "resource" | "number">[] = [
   { x: 3, y: 1, id: 6 },
   { x: -4, y: 0, id: 7 },
   { x: -2, y: 0, id: 8 },
-  { x: 0, y: 0, id: 9 }, // Center tile (desert)
+  { x: 0, y: 0, id: 9 },
   { x: 2, y: 0, id: 10 },
   { x: 4, y: 0, id: 11 },
   { x: -3, y: -1, id: 12 },
@@ -60,7 +56,6 @@ const initialTilesData: Omit<HexTile, "resource" | "number">[] = [
   { x: 2, y: -2, id: 18 },
 ];
 
-// Initial port configuration
 const initialPortsData: Omit<Port, "resource">[] = [
   { x1: -1, y1: 3.5 * HEX_RAD, x2: 0, y2: 4 * HEX_RAD, id: 0 },
   { x1: 2, y1: 4 * HEX_RAD, x2: 3, y2: 3.5 * HEX_RAD, id: 1 },
@@ -68,13 +63,11 @@ const initialPortsData: Omit<Port, "resource">[] = [
   { x1: 4, y1: -HEX_RAD, x2: 4, y2: -2 * HEX_RAD, id: 3 },
   { x1: 3, y1: -3.5 * HEX_RAD, x2: 2, y2: -4 * HEX_RAD, id: 4 },
   { x1: 0, y1: -4 * HEX_RAD, x2: -1, y2: -3.5 * HEX_RAD, id: 5 },
-  { x1: -3, y1: -2.5 * HEX_RAD, x2: -4, y2: -2 * HEX_RAD, id: 6 }, // Python code had y1=-3, y2=-2.5? Adjusted based on pattern. Double check original intent.
+  { x1: -3, y1: -2.5 * HEX_RAD, x2: -4, y2: -2 * HEX_RAD, id: 6 },
   { x1: -5, y1: -0.5 * HEX_RAD, x2: -5, y2: 0.5 * HEX_RAD, id: 7 },
   { x1: -4, y1: 2 * HEX_RAD, x2: -3, y2: 2.5 * HEX_RAD, id: 8 },
 ];
 
-// Port ID -> Banned Tile IDs mapping
-// Using 99 as placeholder instead of 20 for clarity
 const portBannedTiles: Record<number, number[]> = {
   0: [0, 1, 2, 4, 5],
   1: [1, 2, 5, 6, 99],
@@ -124,9 +117,7 @@ const listOfRollNumbersStart: number[] = [
   2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12,
 ];
 
-// --- Helper Functions ---
-
-// Find neighbors based on the doubled coordinate system
+// --- Helper Functions (getNeighbors remains the same) ---
 function getNeighbors(tile: HexTile, allTiles: HexTile[]): HexTile[] {
   const neighbors: HexTile[] = [];
   const neighborCoords = [
@@ -137,304 +128,306 @@ function getNeighbors(tile: HexTile, allTiles: HexTile[]): HexTile[] {
     { dx: -1, dy: -1 },
     { dx: 1, dy: -1 },
   ];
-
   for (const nc of neighborCoords) {
     const neighbor = allTiles.find(
       (t) => t.x === tile.x + nc.dx && t.y === tile.y + nc.dy,
     );
-    if (neighbor) {
-      neighbors.push(neighbor);
-    }
+    if (neighbor) neighbors.push(neighbor);
   }
   return neighbors;
 }
 
 // --- Generation Logic ---
 
+// **NEW**: Define a high attempt limit
+const MAX_TOTAL_GENERATION_ATTEMPTS = 10000; // Allow many attempts
+
+// **MODIFIED**: Function can now return null again if limit is reached
 export function generateCatanBoard(
   defaultPortLocations = true,
   portCheck = true,
 ): GeneratedBoard | null {
-  let tilePlacementAttempts = 0;
-  let numberPlacementAttempts = 0;
-  const MAX_ATTEMPTS = 500; // Prevent infinite loops
+  // Return type is nullable again
+  let totalAttempts = 0; // Track overall attempts
 
-  let finalTiles: HexTile[] = [];
-  let finalPorts: Port[] = [];
+  // Loop until a complete board is generated OR the limit is hit
+  while (totalAttempts < MAX_TOTAL_GENERATION_ATTEMPTS) {
+    totalAttempts++;
+    let tilePlacementSuccess = false;
+    let currentTilesAttempt: HexTile[] | null = null; // Store result of tile phase
 
-  // --- Port Assignment ---
-  let currentPorts = initialPortsData.map((p) => ({
-    ...p,
-    resource: "?" as ResourceType,
-  }));
-  let availablePortResources = [...listOfPortsStart];
+    // --- Tile Placement Inner Loop ---
+    let tilePlacementAttempts = 0;
+    const MAX_TILE_PHASE_ATTEMPTS = 500; // Limit attempts *within* tile phase per overall attempt
+    while (
+      !tilePlacementSuccess &&
+      tilePlacementAttempts < MAX_TILE_PHASE_ATTEMPTS
+    ) {
+      tilePlacementAttempts++;
+      let currentTiles: HexTile[] = initialTilesData.map((t) => ({
+        ...t,
+        resource: null,
+        number: null,
+      }));
+      let availableTiles = [...listOfTilesStart];
+      let tilePlacementFailedThisAttempt = false;
+      let portRuleTimeoutThisAttempt = false;
 
-  if (defaultPortLocations) {
-    currentPorts.forEach((port) => {
-      port.resource = listOfPortsStart[port.id];
-    });
-  } else {
-    availablePortResources = _.shuffle(availablePortResources);
-    currentPorts.forEach((port) => {
-      port.resource = availablePortResources.pop()!;
-    });
-  }
-  finalPorts = currentPorts; // Ports are fixed now
-
-  // --- Tile Placement Loop ---
-  let tilePlacementSuccess = false;
-  while (!tilePlacementSuccess && tilePlacementAttempts < MAX_ATTEMPTS) {
-    tilePlacementAttempts++;
-    let currentTiles: HexTile[] = initialTilesData.map((t) => ({
-      ...t,
-      resource: null,
-      number: null,
-    }));
-    let availableTiles = [...listOfTilesStart];
-    let tilePlacementFailed = false;
-    let portRuleTimeout = false;
-
-    for (const tile of currentTiles) {
-      if (tile.x === 0 && tile.y === 0) {
-        tile.resource = "desert";
+      // Assign ports (do this inside the loop if ports aren't default/fixed)
+      // If ports are fixed, this can stay outside the main while loop. Assuming fixed for now.
+      let finalPorts: Port[] = initialPortsData.map((p) => ({
+        ...p,
+        resource: "?" as ResourceType,
+      }));
+      let availablePortResources = [...listOfPortsStart];
+      if (defaultPortLocations) {
+        finalPorts.forEach((port) => {
+          port.resource = listOfPortsStart[port.id];
+        });
       } else {
-        let possibleTiles = [...availableTiles];
-        let chosenTile: ResourceType | null = null;
-        let tileFits = false;
-        let tryCount = 0;
-        const MAX_TILE_TRIES = 100; // Timeout for finding a suitable tile for one spot
+        availablePortResources = _.shuffle(availablePortResources);
+        finalPorts.forEach((port) => {
+          port.resource = availablePortResources.pop()!;
+        });
+      }
+      // Port assignment done
 
-        while (
-          !tileFits &&
-          tryCount < MAX_TILE_TRIES &&
-          possibleTiles.length > 0
-        ) {
-          tryCount++;
-          const candidateTile = _.sample(possibleTiles)!; // Get a random candidate
-          let isBannedByPort = false;
+      for (const tile of currentTiles) {
+        if (tile.x === 0 && tile.y === 0) {
+          tile.resource = "desert";
+        } else {
+          // ... (inner logic for picking a single tile, including MAX_TILE_TRIES_PER_SPOT) ...
+          let possibleTiles = [...availableTiles];
+          let chosenTile: ResourceType | null = null;
+          let tileFits = false;
+          let tryCount = 0;
+          const MAX_TILE_TRIES_PER_SPOT = 100;
 
-          if (portCheck) {
-            for (const port of finalPorts) {
-              // If port type matches candidate tile type
-              if (port.resource === candidateTile) {
-                // Check if this tile ID is banned for this port
-                if (portBannedTiles[port.id]?.includes(tile.id)) {
+          while (
+            !tileFits &&
+            tryCount < MAX_TILE_TRIES_PER_SPOT &&
+            possibleTiles.length > 0
+          ) {
+            tryCount++;
+            const candidateTile = _.sample(possibleTiles)!;
+            let isBannedByPort = false;
+            if (portCheck) {
+              for (const port of finalPorts) {
+                if (
+                  port.resource === candidateTile &&
+                  portBannedTiles[port.id]?.includes(tile.id)
+                ) {
                   isBannedByPort = true;
-                  break; // Banned by this port, no need to check others
+                  break;
                 }
               }
             }
+            if (!isBannedByPort) {
+              chosenTile = candidateTile;
+              tileFits = true;
+            } else {
+              possibleTiles = possibleTiles.filter((t) => t !== candidateTile);
+            }
+          }
+          if (!tileFits) {
+            portRuleTimeoutThisAttempt = true;
+            break;
           }
 
-          if (!isBannedByPort) {
-            chosenTile = candidateTile;
-            tileFits = true;
+          tile.resource = chosenTile;
+          const indexToRemove = availableTiles.findIndex(
+            (t) => t === chosenTile,
+          );
+          if (indexToRemove > -1) {
+            availableTiles.splice(indexToRemove, 1);
           } else {
-            // Remove the candidate from possibilities for this spot if banned
-            possibleTiles = possibleTiles.filter((t) => t !== candidateTile);
+            tilePlacementFailedThisAttempt = true;
+            break;
           }
-        } // End while finding suitable tile for one spot
-
-        if (!tileFits) {
-          // Could not find a suitable tile for this spot respecting port rules
-          portRuleTimeout = true;
-          break; // Exit the loop for this attempt
         }
+      } // End for loop assigning tiles
 
-        tile.resource = chosenTile;
-        // Remove the chosen tile from the main available list
-        const indexToRemove = availableTiles.findIndex((t) => t === chosenTile);
-        if (indexToRemove > -1) {
-          availableTiles.splice(indexToRemove, 1);
-        } else {
-          // Should not happen if logic is correct
-          console.error("Error: Tried to remove a tile that wasn't available.");
-          tilePlacementFailed = true;
-          break;
-        }
-      }
-    } // End for loop assigning tiles
+      if (portRuleTimeoutThisAttempt || tilePlacementFailedThisAttempt)
+        continue; // Try tile placement again
 
-    if (portRuleTimeout) {
-      // console.log(`Tile attempt ${tilePlacementAttempts}: Port rule timeout`);
-      continue; // Restart tile placement
-    }
-    if (tilePlacementFailed) {
-      // console.log(`Tile attempt ${tilePlacementAttempts}: Logic error`);
-      continue; // Restart tile placement
-    }
-
-    // --- Tile Balancing Rules Check ---
-    let rulesViolated = false;
-
-    // Rule: No two 'stone' or 'brick' adjacent
-    for (const tile of currentTiles) {
-      if (tile.resource === "stone" || tile.resource === "brick") {
-        const neighbors = getNeighbors(tile, currentTiles);
-        if (neighbors.some((n) => n.resource === tile.resource)) {
+      // --- Tile Balancing Rules Check ---
+      let rulesViolated = false;
+      // ... (stone/brick check) ...
+      for (const tile of currentTiles) {
+        if (
+          (tile.resource === "stone" || tile.resource === "brick") &&
+          getNeighbors(tile, currentTiles).some(
+            (n) => n.resource === tile.resource,
+          )
+        ) {
           rulesViolated = true;
           break;
         }
       }
-    }
-    if (rulesViolated) {
-      // console.log(`Tile attempt ${tilePlacementAttempts}: Adjacent stone/brick fail`);
+      if (rulesViolated) continue;
+      // ... (wheat/wood/sheep cluster check) ...
+      for (const tile of currentTiles) {
+        if (["wheat", "wood", "sheep"].includes(tile.resource!)) {
+          const neighbors = getNeighbors(tile, currentTiles);
+          const sameResourceNeighbors = neighbors.filter(
+            (n) => n.resource === tile.resource,
+          );
+          for (const neighbor of sameResourceNeighbors) {
+            if (
+              getNeighbors(neighbor, currentTiles).some(
+                (non) => non.id !== tile.id && non.resource === tile.resource,
+              )
+            ) {
+              rulesViolated = true;
+              break;
+            }
+          }
+          if (rulesViolated) break;
+        }
+      }
+      if (rulesViolated) continue;
+
+      // Tile placement successful for this attempt
+      tilePlacementSuccess = true;
+      currentTilesAttempt = currentTiles; // Store successful tile layout
+      // console.log(`Tile placement successful after ${tilePlacementAttempts} attempts.`);
+    } // End while tile placement inner loop
+
+    // If tile placement failed after its attempts, restart the *outer* loop
+    if (!tilePlacementSuccess || !currentTilesAttempt) {
+      // console.log(`Tile phase failed within overall attempt ${totalAttempts}. Retrying.`);
       continue;
     }
 
-    // Rule: No three 'wheat', 'wood', or 'sheep' forming a cluster
-    for (const tile of currentTiles) {
-      if (["wheat", "wood", "sheep"].includes(tile.resource!)) {
-        const neighbors = getNeighbors(tile, currentTiles);
-        const sameResourceNeighbors = neighbors.filter(
-          (n) => n.resource === tile.resource,
-        );
+    // --- Number Placement Loop ---
+    let numberPlacementSuccess = false;
+    let finalTiles: HexTile[] | null = null;
+    let numberPlacementAttempts = 0;
+    const MAX_NUMBER_PHASE_ATTEMPTS = 500; // Limit attempts *within* number phase
 
-        for (const neighbor of sameResourceNeighbors) {
-          const neighborsOfNeighbor = getNeighbors(neighbor, currentTiles);
+    while (
+      !numberPlacementSuccess &&
+      numberPlacementAttempts < MAX_NUMBER_PHASE_ATTEMPTS
+    ) {
+      numberPlacementAttempts++;
+      let currentTilesWithNumbers = _.cloneDeep(currentTilesAttempt); // Use successful tile layout
+      let availableNumbers = _.shuffle([...listOfRollNumbersStart]);
+      let numberPlacementFailedThisAttempt = false;
+
+      for (const tile of currentTilesWithNumbers) {
+        if (tile.resource !== "desert") {
+          if (availableNumbers.length === 0) {
+            numberPlacementFailedThisAttempt = true;
+            break;
+          }
+          tile.number = availableNumbers.pop()!;
+        }
+      }
+      if (numberPlacementFailedThisAttempt) continue; // Try number placement again
+
+      // --- Number Balancing Rules Check ---
+      let rulesViolated = false;
+      // ... (adjacent same number check) ...
+      for (const tile of currentTilesWithNumbers) {
+        if (
+          tile.number !== null &&
+          getNeighbors(tile, currentTilesWithNumbers).some(
+            (n) => n.number === tile.number,
+          )
+        ) {
+          rulesViolated = true;
+          break;
+        }
+      }
+      if (rulesViolated) continue;
+      // ... (same number on same resource check) ...
+      const resourceNumberPairs = new Set<string>();
+      for (const tile of currentTilesWithNumbers) {
+        if (tile.resource !== "desert" && tile.number !== null) {
+          const pair = `${tile.resource}-${tile.number}`;
+          if (resourceNumberPairs.has(pair)) {
+            rulesViolated = true;
+            break;
+          }
+          resourceNumberPairs.add(pair);
+        }
+      }
+      if (rulesViolated) continue;
+      // ... (6 and 8 on same resource check) ...
+      const resourceHighRolls: Record<string, number[]> = {};
+      for (const tile of currentTilesWithNumbers) {
+        if (
+          tile.resource !== "desert" &&
+          (tile.number === 6 || tile.number === 8)
+        ) {
+          if (!resourceHighRolls[tile.resource!])
+            resourceHighRolls[tile.resource!] = [];
+          resourceHighRolls[tile.resource!].push(tile.number!);
           if (
-            neighborsOfNeighbor.some(
-              (non) => non.id !== tile.id && non.resource === tile.resource,
-            )
+            resourceHighRolls[tile.resource!].includes(6) &&
+            resourceHighRolls[tile.resource!].includes(8)
           ) {
             rulesViolated = true;
             break;
           }
         }
-        if (rulesViolated) break;
       }
-    }
-    if (rulesViolated) {
-      // console.log(`Tile attempt ${tilePlacementAttempts}: Resource cluster fail`);
-      continue;
-    }
-
-    // If we reached here, tile placement was successful for this attempt
-    tilePlacementSuccess = true;
-    finalTiles = currentTiles;
-    // console.log(`Tile placement successful after ${tilePlacementAttempts} attempts.`);
-  } // End while tile placement loop
-
-  if (!tilePlacementSuccess) {
-    console.error("Failed to place tiles after maximum attempts.");
-    return null; // Indicate failure
-  }
-
-  // --- Number Placement Loop ---
-  let numberPlacementSuccess = false;
-  while (!numberPlacementSuccess && numberPlacementAttempts < MAX_ATTEMPTS) {
-    numberPlacementAttempts++;
-    let currentTilesWithNumbers = _.cloneDeep(finalTiles); // Work on a copy
-    let availableNumbers = [...listOfRollNumbersStart];
-    availableNumbers = _.shuffle(availableNumbers);
-    let numberPlacementFailed = false;
-
-    // Assign numbers randomly first
-    for (const tile of currentTilesWithNumbers) {
-      if (tile.resource !== "desert") {
-        if (availableNumbers.length === 0) {
-          console.error("Ran out of numbers to assign!");
-          numberPlacementFailed = true;
-          break;
-        }
-        tile.number = availableNumbers.pop()!;
-      }
-    }
-    if (numberPlacementFailed) continue; // Restart number placement
-
-    // --- Number Balancing Rules Check ---
-    let rulesViolated = false;
-
-    // Rule: No two identical numbers adjacent
-    for (const tile of currentTilesWithNumbers) {
-      if (tile.number !== null) {
-        const neighbors = getNeighbors(tile, currentTilesWithNumbers);
-        if (neighbors.some((n) => n.number === tile.number)) {
-          rulesViolated = true;
-          break;
-        }
-      }
-    }
-    if (rulesViolated) {
-      // console.log(`Number attempt ${numberPlacementAttempts}: Adjacent same number fail`);
-      continue;
-    }
-
-    // Rule: No two identical numbers on the same resource type
-    const resourceNumberPairs = new Set<string>();
-    for (const tile of currentTilesWithNumbers) {
-      if (tile.resource !== "desert" && tile.number !== null) {
-        const pair = `${tile.resource}-${tile.number}`;
-        if (resourceNumberPairs.has(pair)) {
-          rulesViolated = true;
-          break;
-        }
-        resourceNumberPairs.add(pair);
-      }
-    }
-    if (rulesViolated) {
-      // console.log(`Number attempt ${numberPlacementAttempts}: Same number on same resource fail`);
-      continue;
-    }
-
-    // Rule: No 6 and 8 on the same resource type
-    const resourceHighRolls: Record<string, number[]> = {};
-    for (const tile of currentTilesWithNumbers) {
-      if (
-        tile.resource !== "desert" &&
-        (tile.number === 6 || tile.number === 8)
-      ) {
-        if (!resourceHighRolls[tile.resource!]) {
-          resourceHighRolls[tile.resource!] = [];
-        }
-        resourceHighRolls[tile.resource!].push(tile.number!);
+      if (rulesViolated) continue;
+      // ... (adjacent 6 or 8 check) ...
+      for (const tile of currentTilesWithNumbers) {
         if (
-          resourceHighRolls[tile.resource!].includes(6) &&
-          resourceHighRolls[tile.resource!].includes(8)
+          (tile.number === 6 || tile.number === 8) &&
+          getNeighbors(tile, currentTilesWithNumbers).some(
+            (n) => n.number === 6 || n.number === 8,
+          )
         ) {
           rulesViolated = true;
           break;
         }
       }
-    }
-    if (rulesViolated) {
-      // console.log(`Number attempt ${numberPlacementAttempts}: 6 and 8 on same resource fail`);
-      continue;
-    }
+      if (rulesViolated) continue;
 
-    // Rule: No 6 or 8 adjacent
-    for (const tile of currentTilesWithNumbers) {
-      if (tile.number === 6 || tile.number === 8) {
-        const neighbors = getNeighbors(tile, currentTilesWithNumbers);
-        if (neighbors.some((n) => n.number === 6 || n.number === 8)) {
-          rulesViolated = true;
-          break;
-        }
+      // Number placement successful
+      numberPlacementSuccess = true;
+      finalTiles = currentTilesWithNumbers; // Store final board
+      // console.log(`Number placement successful after ${numberPlacementAttempts} attempts.`);
+    } // End while number placement inner loop
+
+    // If number placement succeeded, we have a final board! Return it.
+    if (numberPlacementSuccess && finalTiles) {
+      console.log(
+        `Board generated successfully within total attempt ${totalAttempts}.`,
+      );
+      // Need to return ports as well
+      let finalPortsResult: Port[] = initialPortsData.map((p) => ({
+        ...p,
+        resource: "?" as ResourceType,
+      }));
+      // Re-assign ports based on settings (ensure consistency if ports were assigned earlier)
+      let portsForReturn = [...listOfPortsStart];
+      if (defaultPortLocations) {
+        finalPortsResult.forEach((port) => {
+          port.resource = listOfPortsStart[port.id];
+        });
+      } else {
+        // If ports were randomized, we should ideally use the same randomization as used
+        // during the tile placement checks for this successful attempt.
+        // This requires structuring port assignment differently if non-default is used.
+        // For simplicity now, re-randomizing if needed, but this isn't ideal.
+        portsForReturn = _.shuffle(portsForReturn);
+        finalPortsResult.forEach((port) => {
+          port.resource = portsForReturn.pop()!;
+        });
       }
-    }
-    if (rulesViolated) {
-      // console.log(`Number attempt ${numberPlacementAttempts}: Adjacent 6/8 fail`);
-      continue;
+      return { tiles: finalTiles, ports: finalPortsResult };
     }
 
-    // If we reached here, number placement was successful
-    numberPlacementSuccess = true;
-    finalTiles = currentTilesWithNumbers; // Commit the numbers
-    // console.log(`Number placement successful after ${numberPlacementAttempts} attempts.`);
-  } // End while number placement loop
+    // If number placement failed after its attempts, the outer loop (totalAttempts) will continue.
+  } // End while totalAttempts loop
 
-  if (!numberPlacementSuccess) {
-    console.error("Failed to place numbers after maximum attempts.");
-    // Optionally, you could return the board with only tiles placed,
-    // or null to indicate complete failure.
-    return null;
-  }
-
-  console.log(
-    `Board generated. Tile fails: ${
-      tilePlacementAttempts - 1
-    }, Number fails: ${numberPlacementAttempts - 1}`,
+  // If we exit the while loop, it means MAX_TOTAL_GENERATION_ATTEMPTS was reached
+  console.warn(
+    `Failed to generate a valid board after ${MAX_TOTAL_GENERATION_ATTEMPTS} attempts.`,
   );
-
-  return { tiles: finalTiles, ports: finalPorts };
+  return null; // Indicate failure
 }

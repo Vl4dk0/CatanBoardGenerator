@@ -1,4 +1,3 @@
-// src/components/HexagonTile.tsx
 import React from "react";
 import { Svg, Polygon, Circle, Text as SvgText } from "react-native-svg";
 import type { ResourceType } from "../logic/catanLogic";

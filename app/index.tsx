@@ -1,10 +1,14 @@
 // app/index.tsx
 import { View, StyleSheet } from "react-native";
-import CatanBoard from "../src/components/CatanBoard"; // Adjust path if needed
+import CatanBoard from "../src/components/CatanBoard";
+import { useTheme } from "../src/context/ThemeContext"; // Import useTheme
 
 export default function Index() {
+  const { colors } = useTheme(); // Get theme colors
+
   return (
-    <View style={styles.container}>
+    // Apply theme background color to the main container
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <CatanBoard />
     </View>
   );
@@ -13,8 +17,6 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F5FCFF", // Optional background color
+    // No background color here, applied dynamically
   },
 });
