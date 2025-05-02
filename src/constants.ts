@@ -1,4 +1,4 @@
-import type { ResourceType } from "./logic/catanLogic"; // Adjust path if logic file is elsewhere
+import type { ResourceType } from "./logic/catanLogic";
 
 export const resourceColors: Record<ResourceType, string> = {
   wood: "#215c2a", // Dark Green
@@ -32,7 +32,7 @@ export const portResourceText: Partial<Record<ResourceType, string>> = {
   "?": "3:1",
 };
 
-// TODO: check if all are needed
+// TODO: check if all properties are needed
 export interface ThemeColors {
   background: string;
   text: string;

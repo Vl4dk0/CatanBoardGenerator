@@ -1,27 +1,27 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  StyleSheet,
-  Text,
   ActivityIndicator,
   Pressable,
   SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import Svg from "react-native-svg";
+import {
+  BOARD_CENTER_X,
+  BOARD_CENTER_Y,
+  HEX_SVG_RADIUS,
+  PORT_ELEMENT_BASE_SIZE,
+  SCALE_FACTOR,
+  VIEWBOX_HEIGHT,
+  VIEWBOX_WIDTH,
+} from "../constants";
+import { useTheme } from "../context/ThemeContext";
 import { generateCatanBoard, type GeneratedBoard } from "../logic/catanLogic";
 import HexagonTile from "./HexagonTile";
 import PortDisplay from "./PortDisplay";
 import ThemeToggle from "./ThemeToggle";
-import { useTheme } from "../context/ThemeContext";
-import {
-  VIEWBOX_WIDTH,
-  VIEWBOX_HEIGHT,
-  BOARD_CENTER_X,
-  BOARD_CENTER_Y,
-  SCALE_FACTOR,
-  HEX_SVG_RADIUS,
-  PORT_ELEMENT_BASE_SIZE,
-} from "../constants";
 
 const HEX_RAD_FOR_Y = 2 / Math.sqrt(3);
 const convertCoords = (x: number, y: number) => {
@@ -79,7 +79,7 @@ const CatanBoard: React.FC = () => {
     generateNewBoard();
   }, [generateNewBoard]); // depend on memoized function
 
-  // TODO: put this in some global styles file
+  // Move themedStyles here so it can use colors
   const themedStyles = StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -146,7 +146,7 @@ const CatanBoard: React.FC = () => {
   return (
     <SafeAreaView style={themedStyles.safeArea}>
       <ThemeToggle />
-      <View style={themedStyles.container}>
+      <View style={[themedStyles.container, themedStyles.container]}>
         {/* This should stay */}
         {/* Board Area */}
         <View style={themedStyles.boardArea}>

@@ -1,7 +1,7 @@
-import React from "react";
-import { StyleSheet, Pressable } from "react-native";
-import { useTheme } from "../context/ThemeContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import React from "react";
+import { Pressable, StyleSheet } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme, colors } = useTheme();
