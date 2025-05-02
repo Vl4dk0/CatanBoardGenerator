@@ -22,9 +22,8 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const systemTheme = useColorScheme();
-  // **MODIFIED**: Default to 'dark' unless system explicitly prefers 'light'
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(
-    systemTheme === "light" ? "light" : "dark", // Default to dark
+    systemTheme === "light" ? "light" : "dark",
   );
 
   const toggleTheme = () => {
@@ -49,7 +48,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook to use the theme context
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {

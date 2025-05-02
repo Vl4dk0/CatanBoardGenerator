@@ -8,11 +8,11 @@ import {
   SafeAreaView,
 } from "react-native";
 import Svg from "react-native-svg";
-import { generateCatanBoard, type GeneratedBoard } from "../logic/catanLogic"; // Adjust path if needed
-import HexagonTile from "./HexagonTile"; // Adjust path if needed
-import PortDisplay from "./PortDisplay"; // Adjust path if needed
-import ThemeToggle from "./ThemeToggle"; // Adjust path if needed
-import { useTheme } from "../context/ThemeContext"; // Adjust path if needed
+import { generateCatanBoard, type GeneratedBoard } from "../logic/catanLogic";
+import HexagonTile from "./HexagonTile";
+import PortDisplay from "./PortDisplay";
+import ThemeToggle from "./ThemeToggle";
+import { useTheme } from "../context/ThemeContext";
 import {
   VIEWBOX_WIDTH,
   VIEWBOX_HEIGHT,
@@ -21,9 +21,8 @@ import {
   SCALE_FACTOR,
   HEX_SVG_RADIUS,
   PORT_ELEMENT_BASE_SIZE,
-} from "../constants"; // Adjust path if needed
+} from "../constants";
 
-// Helper function to convert coordinates
 const HEX_RAD_FOR_Y = 2 / Math.sqrt(3);
 const convertCoords = (x: number, y: number) => {
   let svgX = x * SCALE_FACTOR;
@@ -34,48 +33,31 @@ const convertCoords = (x: number, y: number) => {
 };
 
 const CatanBoard: React.FC = () => {
-  // --- State Hooks ---
   const [board, setBoard] = useState<GeneratedBoard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // For timeout or unexpected errors
 
-  // --- Theme Hook ---
-  const { colors } = useTheme(); // Get colors from theme context
+  const { colors } = useTheme();
 
-  // --- Board Generation Logic ---
   const generateNewBoard = useCallback(() => {
-    console.log("Generating new board...");
     setIsLoading(true);
-    setError(null); // Clear previous errors
-    setBoard(null); // Clear previous board
+    setError(null);
+    setBoard(null);
 
     // Use setTimeout to allow UI to update before potentially long generation
     setTimeout(() => {
       try {
         const startTime = Date.now();
-        const newBoard = generateCatanBoard(true, true); // Call the generator
+        const newBoard = generateCatanBoard(true, true);
         const endTime = Date.now();
         console.log(`Generation took ${endTime - startTime}ms`);
 
         if (newBoard) {
-          // Safeguard check for invalid port data
-          const invalidPort = newBoard.ports.find(
-            (p) => p.resource === undefined || p.resource === null,
-          );
-          if (invalidPort) {
-            console.error(
-              "Generated board contains invalid port:",
-              invalidPort,
-            );
-            setError("Generation error: Invalid port data detected.");
-            setBoard(null);
-          } else {
-            console.log("Board generated successfully.");
-            setBoard(newBoard);
-            setError(null); // Ensure no error is shown
-          }
+          console.log("Board generated successfully.");
+          setBoard(newBoard);
+          setError(null);
         } else {
-          // Handle null return from generator (timeout)
+          // too many attepts, failed to generate a board
           console.warn("Board generation timed out.");
           setError(
             "Failed to generate a board within the attempt limit. Please try again.",
@@ -83,24 +65,21 @@ const CatanBoard: React.FC = () => {
           setBoard(null);
         }
       } catch (e: any) {
-        // Handle unexpected errors during generation
         console.error("Unexpected error during board generation:", e);
         setError(`An unexpected error occurred: ${e.message || e}`);
         setBoard(null);
       } finally {
-        setIsLoading(false); // Ensure loading state is turned off
+        setIsLoading(false);
       }
-    }, 50); // Small delay before starting generation
-  }, []); // Empty dependency array means this function is created once
+    }, 50);
+  }, []);
 
-  // --- Effect Hook ---
-  // Generate the initial board when the component mounts
+  // Initial board
   useEffect(() => {
     generateNewBoard();
-  }, [generateNewBoard]); // Depend on the memoized function
+  }, [generateNewBoard]); // depend on memoized function
 
-  // --- Dynamic Styles (Defined *before* return statement) ---
-  // These styles depend on the theme colors
+  // TODO: put this in some global styles file
   const themedStyles = StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -163,11 +142,12 @@ const CatanBoard: React.FC = () => {
     },
   });
 
-  // --- Render Logic ---
+  // TODO: rethink this redering logic, I want this to only have board, rest to be in the index
   return (
     <SafeAreaView style={themedStyles.safeArea}>
       <ThemeToggle />
       <View style={themedStyles.container}>
+        {/* This should stay */}
         {/* Board Area */}
         <View style={themedStyles.boardArea}>
           <View style={themedStyles.svgContainer}>
@@ -242,6 +222,7 @@ const CatanBoard: React.FC = () => {
           </View>
         </View>
 
+        {/* This should go somewhere else */}
         {/* Button Area */}
         <View style={themedStyles.buttonArea}>
           <Pressable

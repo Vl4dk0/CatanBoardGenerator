@@ -1,6 +1,5 @@
 import _ from "lodash";
 
-// --- Interfaces, Types, Initial Data, portBannedTiles, Lists (remain the same) ---
 export type ResourceType =
   | "wood"
   | "brick"
@@ -117,7 +116,6 @@ const listOfRollNumbersStart: number[] = [
   2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12,
 ];
 
-// --- Helper Functions (getNeighbors remains the same) ---
 function getNeighbors(tile: HexTile, allTiles: HexTile[]): HexTile[] {
   const neighbors: HexTile[] = [];
   const neighborCoords = [
@@ -137,28 +135,33 @@ function getNeighbors(tile: HexTile, allTiles: HexTile[]): HexTile[] {
   return neighbors;
 }
 
-// --- Generation Logic ---
+// high values means we give more space to even bad seeds
+// altough we do not give up too soon on good seeds
 
-// **NEW**: Define a high attempt limit
-const MAX_TOTAL_GENERATION_ATTEMPTS = 10000; // Allow many attempts
+// TODO: optimize value
+const MAX_TOTAL_GENERATION_ATTEMPTS = 10000;
 
-// **MODIFIED**: Function can now return null again if limit is reached
+// TODO: optimize value
+const MAX_TILE_PHASE_ATTEMPTS = 500;
+
+// TODO: optimize value
+const MAX_TILE_TRIES_PER_SPOT = 100;
+
+// TODO: optimize value
+const MAX_NUMBER_PHASE_ATTEMPTS = 500;
+
 export function generateCatanBoard(
   defaultPortLocations = true,
   portCheck = true,
 ): GeneratedBoard | null {
-  // Return type is nullable again
-  let totalAttempts = 0; // Track overall attempts
+  let totalAttempts = 0;
 
-  // Loop until a complete board is generated OR the limit is hit
   while (totalAttempts < MAX_TOTAL_GENERATION_ATTEMPTS) {
     totalAttempts++;
     let tilePlacementSuccess = false;
-    let currentTilesAttempt: HexTile[] | null = null; // Store result of tile phase
+    let currentTilesAttempt: HexTile[] | null = null;
 
-    // --- Tile Placement Inner Loop ---
     let tilePlacementAttempts = 0;
-    const MAX_TILE_PHASE_ATTEMPTS = 500; // Limit attempts *within* tile phase per overall attempt
     while (
       !tilePlacementSuccess &&
       tilePlacementAttempts < MAX_TILE_PHASE_ATTEMPTS
@@ -173,35 +176,22 @@ export function generateCatanBoard(
       let tilePlacementFailedThisAttempt = false;
       let portRuleTimeoutThisAttempt = false;
 
-      // Assign ports (do this inside the loop if ports aren't default/fixed)
-      // If ports are fixed, this can stay outside the main while loop. Assuming fixed for now.
-      let finalPorts: Port[] = initialPortsData.map((p) => ({
+      let ports: Port[] = initialPortsData.map((p) => ({
         ...p,
         resource: "?" as ResourceType,
       }));
-      let availablePortResources = [...listOfPortsStart];
-      if (defaultPortLocations) {
-        finalPorts.forEach((port) => {
-          port.resource = listOfPortsStart[port.id];
-        });
-      } else {
-        availablePortResources = _.shuffle(availablePortResources);
-        finalPorts.forEach((port) => {
-          port.resource = availablePortResources.pop()!;
-        });
-      }
-      // Port assignment done
+      ports.forEach((port) => {
+        port.resource = listOfPortsStart[port.id];
+      });
 
       for (const tile of currentTiles) {
         if (tile.x === 0 && tile.y === 0) {
           tile.resource = "desert";
         } else {
-          // ... (inner logic for picking a single tile, including MAX_TILE_TRIES_PER_SPOT) ...
           let possibleTiles = [...availableTiles];
           let chosenTile: ResourceType | null = null;
           let tileFits = false;
           let tryCount = 0;
-          const MAX_TILE_TRIES_PER_SPOT = 100;
 
           while (
             !tileFits &&
@@ -210,9 +200,11 @@ export function generateCatanBoard(
           ) {
             tryCount++;
             const candidateTile = _.sample(possibleTiles)!;
+
+            // Resource shouldnt be next to its port
             let isBannedByPort = false;
             if (portCheck) {
-              for (const port of finalPorts) {
+              for (const port of ports) {
                 if (
                   port.resource === candidateTile &&
                   portBannedTiles[port.id]?.includes(tile.id)
@@ -245,14 +237,16 @@ export function generateCatanBoard(
             break;
           }
         }
-      } // End for loop assigning tiles
+      }
 
+      // try again
       if (portRuleTimeoutThisAttempt || tilePlacementFailedThisAttempt)
-        continue; // Try tile placement again
+        continue;
 
-      // --- Tile Balancing Rules Check ---
+      // Check rules
       let rulesViolated = false;
-      // ... (stone/brick check) ...
+
+      // stones cannot be next to each other, same with bricks
       for (const tile of currentTiles) {
         if (
           (tile.resource === "stone" || tile.resource === "brick") &&
@@ -265,52 +259,43 @@ export function generateCatanBoard(
         }
       }
       if (rulesViolated) continue;
-      // ... (wheat/wood/sheep cluster check) ...
+
+      // is there a triplet of wheat, wood or sheep?
       for (const tile of currentTiles) {
         if (["wheat", "wood", "sheep"].includes(tile.resource!)) {
           const neighbors = getNeighbors(tile, currentTiles);
           const sameResourceNeighbors = neighbors.filter(
-            (n) => n.resource === tile.resource,
+            (other) => other.resource === tile.resource,
           );
-          for (const neighbor of sameResourceNeighbors) {
-            if (
-              getNeighbors(neighbor, currentTiles).some(
-                (non) => non.id !== tile.id && non.resource === tile.resource,
-              )
-            ) {
-              rulesViolated = true;
-              break;
-            }
+
+          if (sameResourceNeighbors.length > 1) {
+            rulesViolated = true;
+            break;
           }
-          if (rulesViolated) break;
         }
       }
       if (rulesViolated) continue;
 
-      // Tile placement successful for this attempt
       tilePlacementSuccess = true;
-      currentTilesAttempt = currentTiles; // Store successful tile layout
-      // console.log(`Tile placement successful after ${tilePlacementAttempts} attempts.`);
-    } // End while tile placement inner loop
+      currentTilesAttempt = currentTiles;
+      // success
+    }
 
-    // If tile placement failed after its attempts, restart the *outer* loop
+    // try again
     if (!tilePlacementSuccess || !currentTilesAttempt) {
-      // console.log(`Tile phase failed within overall attempt ${totalAttempts}. Retrying.`);
       continue;
     }
 
-    // --- Number Placement Loop ---
+    // Number placements
     let numberPlacementSuccess = false;
     let finalTiles: HexTile[] | null = null;
     let numberPlacementAttempts = 0;
-    const MAX_NUMBER_PHASE_ATTEMPTS = 500; // Limit attempts *within* number phase
-
     while (
       !numberPlacementSuccess &&
       numberPlacementAttempts < MAX_NUMBER_PHASE_ATTEMPTS
     ) {
       numberPlacementAttempts++;
-      let currentTilesWithNumbers = _.cloneDeep(currentTilesAttempt); // Use successful tile layout
+      let currentTilesWithNumbers = _.cloneDeep(currentTilesAttempt);
       let availableNumbers = _.shuffle([...listOfRollNumbersStart]);
       let numberPlacementFailedThisAttempt = false;
 
@@ -323,11 +308,14 @@ export function generateCatanBoard(
           tile.number = availableNumbers.pop()!;
         }
       }
-      if (numberPlacementFailedThisAttempt) continue; // Try number placement again
 
-      // --- Number Balancing Rules Check ---
+      // try again
+      if (numberPlacementFailedThisAttempt) continue;
+
+      // Check rules for numbers
       let rulesViolated = false;
-      // ... (adjacent same number check) ...
+
+      // no same number on adjacent tiles
       for (const tile of currentTilesWithNumbers) {
         if (
           tile.number !== null &&
@@ -340,7 +328,8 @@ export function generateCatanBoard(
         }
       }
       if (rulesViolated) continue;
-      // ... (same number on same resource check) ...
+
+      // no same resource-number pairs
       const resourceNumberPairs = new Set<string>();
       for (const tile of currentTilesWithNumbers) {
         if (tile.resource !== "desert" && tile.number !== null) {
@@ -353,27 +342,8 @@ export function generateCatanBoard(
         }
       }
       if (rulesViolated) continue;
-      // ... (6 and 8 on same resource check) ...
-      const resourceHighRolls: Record<string, number[]> = {};
-      for (const tile of currentTilesWithNumbers) {
-        if (
-          tile.resource !== "desert" &&
-          (tile.number === 6 || tile.number === 8)
-        ) {
-          if (!resourceHighRolls[tile.resource!])
-            resourceHighRolls[tile.resource!] = [];
-          resourceHighRolls[tile.resource!].push(tile.number!);
-          if (
-            resourceHighRolls[tile.resource!].includes(6) &&
-            resourceHighRolls[tile.resource!].includes(8)
-          ) {
-            rulesViolated = true;
-            break;
-          }
-        }
-      }
-      if (rulesViolated) continue;
-      // ... (adjacent 6 or 8 check) ...
+
+      // No 6 and 8 on adjacent tiles
       for (const tile of currentTilesWithNumbers) {
         if (
           (tile.number === 6 || tile.number === 8) &&
@@ -387,47 +357,30 @@ export function generateCatanBoard(
       }
       if (rulesViolated) continue;
 
-      // Number placement successful
       numberPlacementSuccess = true;
-      finalTiles = currentTilesWithNumbers; // Store final board
-      // console.log(`Number placement successful after ${numberPlacementAttempts} attempts.`);
-    } // End while number placement inner loop
+      finalTiles = currentTilesWithNumbers;
+      // success
+    }
 
-    // If number placement succeeded, we have a final board! Return it.
     if (numberPlacementSuccess && finalTiles) {
-      console.log(
-        `Board generated successfully within total attempt ${totalAttempts}.`,
-      );
-      // Need to return ports as well
+      // TODO: make this constant
       let finalPortsResult: Port[] = initialPortsData.map((p) => ({
         ...p,
         resource: "?" as ResourceType,
       }));
-      // Re-assign ports based on settings (ensure consistency if ports were assigned earlier)
-      let portsForReturn = [...listOfPortsStart];
-      if (defaultPortLocations) {
-        finalPortsResult.forEach((port) => {
-          port.resource = listOfPortsStart[port.id];
-        });
-      } else {
-        // If ports were randomized, we should ideally use the same randomization as used
-        // during the tile placement checks for this successful attempt.
-        // This requires structuring port assignment differently if non-default is used.
-        // For simplicity now, re-randomizing if needed, but this isn't ideal.
-        portsForReturn = _.shuffle(portsForReturn);
-        finalPortsResult.forEach((port) => {
-          port.resource = portsForReturn.pop()!;
-        });
-      }
+      finalPortsResult.forEach((port) => {
+        port.resource = listOfPortsStart[port.id];
+      });
       return { tiles: finalTiles, ports: finalPortsResult };
     }
 
-    // If number placement failed after its attempts, the outer loop (totalAttempts) will continue.
-  } // End while totalAttempts loop
+    // try again
+  }
 
-  // If we exit the while loop, it means MAX_TOTAL_GENERATION_ATTEMPTS was reached
   console.warn(
     `Failed to generate a valid board after ${MAX_TOTAL_GENERATION_ATTEMPTS} attempts.`,
   );
-  return null; // Indicate failure
+
+  // indicate failure
+  return null;
 }

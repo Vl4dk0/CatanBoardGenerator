@@ -1,16 +1,14 @@
-// app/_layout.tsx
 import { Stack } from "expo-router";
-import { ThemeProvider } from "../src/context/ThemeContext"; // Adjust path
+import { ThemeProvider } from "../src/context/ThemeContext";
 
 export default function RootLayout() {
   return (
-    // Wrap the entire layout with the ThemeProvider
     <ThemeProvider>
       <Stack>
         <Stack.Screen
           name="index"
           options={{
-            headerShown: false, // Keep header hidden
+            headerShown: false,
           }}
         />
       </Stack>

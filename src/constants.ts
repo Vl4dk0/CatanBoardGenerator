@@ -10,7 +10,6 @@ export const resourceColors: Record<ResourceType, string> = {
   "?": "#696969", // Dim Gray for unknown/generic port
 };
 
-// Define colors for numbers, especially highlighting 6 and 8
 export const numberColors: Record<number, string> = {
   2: "black",
   3: "black",
@@ -24,17 +23,16 @@ export const numberColors: Record<number, string> = {
   12: "black",
 };
 
-// Simple mapping for port resource text labels
 export const portResourceText: Partial<Record<ResourceType, string>> = {
-  wood: "W",
-  brick: "B",
-  sheep: "S",
-  wheat: "Wh",
-  stone: "St",
-  "?": "3:1", // Indicate 3:1 trade for generic ports
+  wood: "Wood",
+  brick: "Brick",
+  sheep: "Sheep",
+  wheat: "Wheat",
+  stone: "Stone",
+  "?": "3:1",
 };
 
-// --- Theme Colors Interface ---
+// TODO: check if all are needed
 export interface ThemeColors {
   background: string;
   text: string;
@@ -47,7 +45,9 @@ export interface ThemeColors {
   switchTrack: string;
 }
 
-// --- Light Theme ---
+// TODO: rethink the colors, mainly for the button
+
+// Light theme
 export const lightThemeColors: ThemeColors = {
   background: "#F5FCFF", // Light blue/white
   text: "#111827", // Dark gray
@@ -60,7 +60,7 @@ export const lightThemeColors: ThemeColors = {
   switchTrack: "#767577",
 };
 
-// --- Dark Theme ---
+// Dark theme
 export const darkThemeColors: ThemeColors = {
   background: "#121212", // Very dark gray
   text: "#E5E7EB", // Light gray
@@ -73,14 +73,17 @@ export const darkThemeColors: ThemeColors = {
   switchTrack: "#4b5563",
 };
 
-// --- SVG Rendering Configuration ---
-export const HEX_SVG_RADIUS = 40; // Increased from 28 (adjust as needed)
-export const PORT_ELEMENT_BASE_SIZE = HEX_SVG_RADIUS * 0.5; // Recalculates based on new radius
+// TODO: dynamically calculate the viewbox width and height based on the screen size
+// then calculate the svg_radius based on that.
 
-export const VIEWBOX_WIDTH = 500;
-export const VIEWBOX_HEIGHT = 500;
+// SVG rendering config
+export const VIEWBOX_WIDTH = 400;
+export const VIEWBOX_HEIGHT = VIEWBOX_WIDTH;
 export const BOARD_CENTER_X = VIEWBOX_WIDTH / 2;
 export const BOARD_CENTER_Y = VIEWBOX_HEIGHT / 2;
-// Keep scale factor for positioning
-export const PYTHON_PLOT_RANGE = 14; // from -7 to 7 in original plot
+
+export const HEX_SVG_RADIUS = VIEWBOX_WIDTH * 0.08;
+export const PORT_ELEMENT_BASE_SIZE = HEX_SVG_RADIUS * 0.5;
+
+export const PYTHON_PLOT_RANGE = 14;
 export const SCALE_FACTOR = VIEWBOX_WIDTH / PYTHON_PLOT_RANGE;
