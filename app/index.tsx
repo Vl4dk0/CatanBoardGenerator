@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Pressable,
   SafeAreaView,
-  Dimensions,
 } from "react-native";
 import CatanBoard from "../src/components/CatanBoard";
 import {
@@ -14,9 +13,10 @@ import {
   type GeneratedBoard,
 } from "../src/logic/catanLogic";
 import {
-  HEX_RADIUS_RATIO,
-  PORT_SIZE_RATIO,
-  PYTHON_PLOT_RANGE,
+  HEX_SVG_RADIUS,
+  PORT_ELEMENT_BASE_SIZE,
+  SCALE_FACTOR,
+  VIEWBOX_WIDTH,
 } from "../src/constants";
 import { useTheme } from "../src/context/ThemeContext";
 
@@ -25,22 +25,6 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
-
-  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-
-  const boardContainerSize = useMemo(
-    () => Math.min(screenWidth, screenHeight) * 0.9,
-    [screenWidth, screenHeight],
-  );
-
-  // Calculate dynamic SVG/component sizes based on the container size
-  const dynamicSizes = useMemo(() => {
-    const viewBoxSize = boardContainerSize;
-    const hexRadius = viewBoxSize * HEX_RADIUS_RATIO;
-    const portSize = hexRadius * PORT_SIZE_RATIO;
-    const scaleFactor = viewBoxSize / PYTHON_PLOT_RANGE;
-    return { viewBoxSize, hexRadius, portSize, scaleFactor };
-  }, [boardContainerSize]);
 
   // Board Generation
   const generateNewBoard = useCallback(() => {
@@ -92,8 +76,8 @@ export default function Index() {
       alignItems: "center",
     },
     svgContainer: {
-      width: boardContainerSize,
-      height: boardContainerSize,
+      width: "100%",
+      height: "90%",
       borderWidth: 1,
       borderColor: colors.svgBorder,
       alignItems: "center",
@@ -142,10 +126,10 @@ export default function Index() {
             ) : (
               <CatanBoard
                 board={board}
-                viewBoxSize={dynamicSizes.viewBoxSize}
-                hexRadius={dynamicSizes.hexRadius}
-                portSize={dynamicSizes.portSize}
-                scaleFactor={dynamicSizes.scaleFactor}
+                viewBoxSize={VIEWBOX_WIDTH}
+                hexRadius={HEX_SVG_RADIUS}
+                portSize={PORT_ELEMENT_BASE_SIZE}
+                scaleFactor={SCALE_FACTOR}
               />
             )}
           </View>

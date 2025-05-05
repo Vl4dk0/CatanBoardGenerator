@@ -66,7 +66,7 @@ export const darkThemeColors: ThemeColors = {
 };
 
 // SVG rendering config
-export const VIEWBOX_WIDTH = 400;
+export const VIEWBOX_WIDTH = 350;
 export const VIEWBOX_HEIGHT = VIEWBOX_WIDTH;
 export const BOARD_CENTER_X = VIEWBOX_WIDTH / 2;
 export const BOARD_CENTER_Y = VIEWBOX_HEIGHT / 2;

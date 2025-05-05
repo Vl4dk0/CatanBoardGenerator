@@ -1,25 +1,9 @@
 # TODO
 
-## 1. Fix UI, is it really necessary to have light and dark mode ?
-- Make only one mode, that is not too dark and not too light.
-
-## 2. UI/UX Improvements
-- Rethink and improve button color and style; move button styles to a separate file.
-- Position the "regenerate board" button so it sits exactly between the bottom of the board and the bottom of the screen (avoid hardcoded padding).
-- Rethink the color palette, especially for buttons (see `constants.ts`).
-
-## 3. Theming & Responsiveness
-- Dynamically calculate SVG viewbox width and height based on screen size, and adjust `svg_radius` accordingly.
-
-## 4. Code Quality & Optimization
-- Check if all properties on the `ThemeColors` interface are needed and remove unused ones.
-- Optimize the following constants in `catanLogic.ts`:
-  - `MAX_TOTAL_GENERATION_ATTEMPTS`
-  - `MAX_TILE_PHASE_ATTEMPTS`
-  - `MAX_TILE_TRIES_PER_SPOT`
-  - `MAX_NUMBER_PHASE_ATTEMPTS`
-- Make the port mapping in `catanLogic.ts` a constant.
-
 ## 5. User Options & Features
 - Add options for the user to choose values that affect board generation.
+- importance 7/10
 
+## 6. Seed generated boards
+- User can put a seed value to generate the same board again.
+- importance 2/10

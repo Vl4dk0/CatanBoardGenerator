@@ -44,14 +44,11 @@ const CatanBoard: React.FC<CatanBoardProps> = ({
   }
 
   // Calculate center based on dynamic viewBoxSize
-  const centerX = viewBoxSize / 2;
-  const centerY = viewBoxSize / 2;
 
   return (
     <Svg
       height="100%"
       width="100%"
-      // Use dynamic viewBoxSize
       viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
     >
       {/* Render Tiles */}
