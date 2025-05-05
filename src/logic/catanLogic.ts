@@ -330,10 +330,14 @@ export function generateCatanBoard(
       if (rulesViolated) continue;
 
       // no same resource-number pairs
+      // no 6 and 8 on the same tile-type
       const resourceNumberPairs = new Set<string>();
       for (const tile of currentTilesWithNumbers) {
         if (tile.resource !== "desert" && tile.number !== null) {
-          const pair = `${tile.resource}-${tile.number}`;
+          let number =
+            tile.number === 6 || tile.number === 8 ? 100 : tile.number;
+
+          const pair = `${tile.resource}-${number}`;
           if (resourceNumberPairs.has(pair)) {
             rulesViolated = true;
             break;

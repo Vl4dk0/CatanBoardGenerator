@@ -35,12 +35,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 20,
     padding: 4,
-    position: "absolute",
-    top: 60,
-    right: 15,
   },
   icon: {
-    marginRight: 5,
+    marginHorizontal: 5,
   },
 });
 

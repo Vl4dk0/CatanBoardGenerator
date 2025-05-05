@@ -1,8 +1,7 @@
 # TODO
 
-## 1. Refactoring & Code Structure
-- Move global styles to a dedicated file (currently duplicated in `index.tsx` and `CatanBoard.tsx`).
-- Refactor `CatanBoard.tsx` so it only renders the board; move UI logic (ThemeToggle, button, etc.) to `index.tsx`.
+## 1. Fix UI, is it really necessary to have light and dark mode ?
+- Make only one mode, that is not too dark and not too light.
 
 ## 2. UI/UX Improvements
 - Rethink and improve button color and style; move button styles to a separate file.
