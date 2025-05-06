@@ -10,11 +10,6 @@
   "theme_color": "#000000",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
       "src": "CatanBalancer1024.png",
       "sizes": "1024x1024",
       "type": "image/png"

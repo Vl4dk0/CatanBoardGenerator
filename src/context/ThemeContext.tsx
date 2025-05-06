@@ -5,7 +5,7 @@ import React, {
   useMemo,
   ReactNode,
 } from "react";
-import { useColorScheme } from "react-native";
+// import { useColorScheme } from "react-native";
 import { lightThemeColors, darkThemeColors, ThemeColors } from "../constants"; // We'll define these next
 
 type ThemeContextType = {
@@ -21,7 +21,7 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const systemTheme = useColorScheme();
+  const systemTheme = "light"; // useColorScheme();
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(
     systemTheme === "light" ? "light" : "dark",
   );

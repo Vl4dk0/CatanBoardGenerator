@@ -19,6 +19,27 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Link the PWA manifest file */}
         <link rel="manifest" href="/manifest.json" />
 
+        <link
+          rel="CatanBalancer48-transparent"
+          sizes="48x48"
+          href="/CatanBalancer48-transparent.png"
+        />
+        <link
+          rel="CatanBalancer120-transparent"
+          sizes="120x120"
+          href="/CatanBalancer120-transparent.png"
+        />
+        <link
+          rel="CatanBalancer152-transparent"
+          sizes="152x152"
+          href="/CatanBalancer152-transparent.png"
+        />
+        <link
+          rel="CatanBalancer180-transparent"
+          sizes="180x180"
+          href="/CatanBalancer180-transparent.png"
+        />
+
         {/* Bootstrap the service worker. */}
         <script dangerouslySetInnerHTML={{ __html: sw }} />
 
