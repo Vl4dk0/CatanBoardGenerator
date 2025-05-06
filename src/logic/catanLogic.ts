@@ -116,6 +116,14 @@ const listOfRollNumbersStart: number[] = [
   2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12,
 ];
 
+const ports: Port[] = initialPortsData.map((p) => ({
+  ...p,
+  resource: "?" as ResourceType,
+}));
+ports.forEach((port) => {
+  port.resource = listOfPortsStart[port.id];
+});
+
 function getNeighbors(tile: HexTile, allTiles: HexTile[]): HexTile[] {
   const neighbors: HexTile[] = [];
   const neighborCoords = [
@@ -150,10 +158,7 @@ const MAX_TILE_TRIES_PER_SPOT = 100;
 // TODO: optimize value
 const MAX_NUMBER_PHASE_ATTEMPTS = 500;
 
-export function generateCatanBoard(
-  defaultPortLocations = true,
-  portCheck = true,
-): GeneratedBoard | null {
+export function generateCatanBoard(portCheck = true): GeneratedBoard | null {
   let totalAttempts = 0;
 
   while (totalAttempts < MAX_TOTAL_GENERATION_ATTEMPTS) {
@@ -161,6 +166,7 @@ export function generateCatanBoard(
     let tilePlacementSuccess = false;
     let currentTilesAttempt: HexTile[] | null = null;
 
+    // tile placement
     let tilePlacementAttempts = 0;
     while (
       !tilePlacementSuccess &&
@@ -175,14 +181,6 @@ export function generateCatanBoard(
       let availableTiles = [...listOfTilesStart];
       let tilePlacementFailedThisAttempt = false;
       let portRuleTimeoutThisAttempt = false;
-
-      let ports: Port[] = initialPortsData.map((p) => ({
-        ...p,
-        resource: "?" as ResourceType,
-      }));
-      ports.forEach((port) => {
-        port.resource = listOfPortsStart[port.id];
-      });
 
       for (const tile of currentTiles) {
         if (tile.x === 0 && tile.y === 0) {
@@ -276,6 +274,38 @@ export function generateCatanBoard(
       }
       if (rulesViolated) continue;
 
+      // there should be at most 2 neighbours of the same resource
+      // if there are 2, they cannot be the same resource
+      let doubles = 0;
+      for (const tile of currentTiles) {
+        const neighbors = getNeighbors(tile, currentTiles);
+        const sameResourceNeighbors = neighbors.filter(
+          (other) => other.resource === tile.resource,
+        );
+
+        doubles += sameResourceNeighbors.length;
+      }
+      doubles /= 2; // each double is counted twice
+      if (doubles > 2) {
+        rulesViolated = true;
+      }
+      if (doubles === 2) {
+        const firstTile = currentTiles.find(
+          (t) => t.resource === currentTiles[0].resource,
+        );
+        const secondTile = currentTiles.find(
+          (t) => t.resource === currentTiles[1].resource,
+        );
+        if (
+          firstTile &&
+          secondTile &&
+          firstTile.resource === secondTile.resource
+        ) {
+          rulesViolated = true;
+        }
+      }
+      if (rulesViolated) continue;
+
       tilePlacementSuccess = true;
       currentTilesAttempt = currentTiles;
       // success
@@ -361,21 +391,23 @@ export function generateCatanBoard(
       }
       if (rulesViolated) continue;
 
+      // 2 and 12 should be on the same resource
+      const two = currentTilesWithNumbers.find((t) => t.number === 2);
+      const twelve = currentTilesWithNumbers.find((t) => t.number === 12);
+      if (two && twelve) {
+        if (two.resource === twelve.resource) {
+          rulesViolated = true;
+        }
+      }
+      if (rulesViolated) continue;
+
       numberPlacementSuccess = true;
       finalTiles = currentTilesWithNumbers;
       // success
     }
 
     if (numberPlacementSuccess && finalTiles) {
-      // TODO: make this constant
-      let finalPortsResult: Port[] = initialPortsData.map((p) => ({
-        ...p,
-        resource: "?" as ResourceType,
-      }));
-      finalPortsResult.forEach((port) => {
-        port.resource = listOfPortsStart[port.id];
-      });
-      return { tiles: finalTiles, ports: finalPortsResult };
+      return { tiles: finalTiles, ports: ports };
     }
 
     // try again
