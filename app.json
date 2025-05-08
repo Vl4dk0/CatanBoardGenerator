@@ -4,7 +4,7 @@
     "slug": "CatanBoardGenerator",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./public/CatanBalancer1024.png",
     "scheme": "catanboardgenerator",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -21,7 +21,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./public/CatanBalancer48-transparent.png"
     },
     "plugins": [
       "expo-router",
