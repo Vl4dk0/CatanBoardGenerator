@@ -276,32 +276,45 @@ export function generateCatanBoard(portCheck = true): GeneratedBoard | null {
 
       // there should be at most 2 neighbours of the same resource
       // if there are 2, they cannot be the same resource
-      let doubles = 0;
-      for (const tile of currentTiles) {
-        const neighbors = getNeighbors(tile, currentTiles);
-        const sameResourceNeighbors = neighbors.filter(
-          (other) => other.resource === tile.resource,
-        );
+      // let doubles = 0;
+      // for (const tile of currentTiles) {
+      //   const neighbors = getNeighbors(tile, currentTiles);
+      //   const sameResourceNeighbors = neighbors.filter(
+      //     (other) => other.resource === tile.resource,
+      //   );
+      //
+      //   doubles += sameResourceNeighbors.length;
+      // }
+      // doubles /= 2; // each double is counted twice
+      // if (doubles > 2) {
+      //   rulesViolated = true;
+      // }
+      // if (doubles === 2) {
+      //   const firstTile = currentTiles.find(
+      //     (t) => t.resource === currentTiles[0].resource,
+      //   );
+      //   const secondTile = currentTiles.find(
+      //     (t) => t.resource === currentTiles[1].resource,
+      //   );
+      //   if (
+      //     firstTile &&
+      //     secondTile &&
+      //     firstTile.resource === secondTile.resource
+      //   ) {
+      //     rulesViolated = true;
+      //   }
+      // }
+      // if (rulesViolated) continue;
 
-        doubles += sameResourceNeighbors.length;
-      }
-      doubles /= 2; // each double is counted twice
-      if (doubles > 2) {
-        rulesViolated = true;
-      }
-      if (doubles === 2) {
-        const firstTile = currentTiles.find(
-          (t) => t.resource === currentTiles[0].resource,
-        );
-        const secondTile = currentTiles.find(
-          (t) => t.resource === currentTiles[1].resource,
-        );
+      // there should be no same resources on adjacent tiles
+      for (const tile of currentTiles) {
         if (
-          firstTile &&
-          secondTile &&
-          firstTile.resource === secondTile.resource
+          getNeighbors(tile, currentTiles).some(
+            (n) => n.resource === tile.resource,
+          )
         ) {
           rulesViolated = true;
+          break;
         }
       }
       if (rulesViolated) continue;
