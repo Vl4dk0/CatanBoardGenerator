@@ -158,7 +158,7 @@ const MAX_TILE_TRIES_PER_SPOT = 100;
 // TODO: optimize value
 const MAX_NUMBER_PHASE_ATTEMPTS = 500;
 
-export function generateCatanBoard(portCheck = true): GeneratedBoard | null {
+export function generateCatanBoard(): GeneratedBoard | null {
   let totalAttempts = 0;
 
   while (totalAttempts < MAX_TOTAL_GENERATION_ATTEMPTS) {
@@ -201,15 +201,13 @@ export function generateCatanBoard(portCheck = true): GeneratedBoard | null {
 
             // Resource shouldnt be next to its port
             let isBannedByPort = false;
-            if (portCheck) {
-              for (const port of ports) {
-                if (
-                  port.resource === candidateTile &&
-                  portBannedTiles[port.id]?.includes(tile.id)
-                ) {
-                  isBannedByPort = true;
-                  break;
-                }
+            for (const port of ports) {
+              if (
+                port.resource === candidateTile &&
+                portBannedTiles[port.id]?.includes(tile.id)
+              ) {
+                isBannedByPort = true;
+                break;
               }
             }
             if (!isBannedByPort) {
@@ -244,64 +242,16 @@ export function generateCatanBoard(portCheck = true): GeneratedBoard | null {
       // Check rules
       let rulesViolated = false;
 
-      // stones cannot be next to each other, same with bricks
+      // No same resource tiles can be adjacent to each other
       for (const tile of currentTiles) {
         if (
-          (tile.resource === "stone" || tile.resource === "brick") &&
+          tile.resource !== "desert" &&
           getNeighbors(tile, currentTiles).some(
             (n) => n.resource === tile.resource,
           )
         ) {
           rulesViolated = true;
           break;
-        }
-      }
-      if (rulesViolated) continue;
-
-      // is there a triplet of wheat, wood or sheep?
-      for (const tile of currentTiles) {
-        if (["wheat", "wood", "sheep"].includes(tile.resource!)) {
-          const neighbors = getNeighbors(tile, currentTiles);
-          const sameResourceNeighbors = neighbors.filter(
-            (other) => other.resource === tile.resource,
-          );
-
-          if (sameResourceNeighbors.length > 1) {
-            rulesViolated = true;
-            break;
-          }
-        }
-      }
-      if (rulesViolated) continue;
-
-      // there should be at most 2 neighbours of the same resource
-      // if there are 2, they cannot be the same resource
-      let doubles = 0;
-      for (const tile of currentTiles) {
-        const neighbors = getNeighbors(tile, currentTiles);
-        const sameResourceNeighbors = neighbors.filter(
-          (other) => other.resource === tile.resource,
-        );
-
-        doubles += sameResourceNeighbors.length;
-      }
-      doubles /= 2; // each double is counted twice
-      if (doubles > 2) {
-        rulesViolated = true;
-      }
-      if (doubles === 2) {
-        const firstTile = currentTiles.find(
-          (t) => t.resource === currentTiles[0].resource,
-        );
-        const secondTile = currentTiles.find(
-          (t) => t.resource === currentTiles[1].resource,
-        );
-        if (
-          firstTile &&
-          secondTile &&
-          firstTile.resource === secondTile.resource
-        ) {
-          rulesViolated = true;
         }
       }
       if (rulesViolated) continue;

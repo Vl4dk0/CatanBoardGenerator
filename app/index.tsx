@@ -35,7 +35,7 @@ export default function Index() {
     setTimeout(() => {
       try {
         const startTime = Date.now();
-        const newBoard = generateCatanBoard(true, true);
+        const newBoard = generateCatanBoard();
         const endTime = Date.now();
         console.log(`Generation took ${endTime - startTime}ms`);
         if (newBoard) {
