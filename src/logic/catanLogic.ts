@@ -140,7 +140,7 @@ function getDiceProbability(number: number): number {
   return probabilities[number] || 0;
 }
 
-function calculateResourceBalance(
+export function calculateResourceBalance(
   tiles: HexTile[],
 ): Map<ResourceType, number> {
   const resourceStats = new Map<
@@ -168,22 +168,48 @@ function calculateResourceBalance(
   return averages;
 }
 
-function isResourceBalanced(tiles: HexTile[]): boolean {
-  const averages = calculateResourceBalance(tiles);
-  const avgValues = Array.from(averages.values());
+export function calculateResourceDropProbability(
+  tiles: HexTile[],
+): Map<ResourceType, number> {
+  const resourceNumbers = new Map<ResourceType, Set<number>>();
 
-  if (avgValues.length === 0) return false;
-
-  const overallAvg = avgValues.reduce((a, b) => a + b, 0) / avgValues.length;
-  const threshold = overallAvg * 0.2; // 20% variance
-
-  for (const avgProb of avgValues) {
-    if (Math.abs(avgProb - overallAvg) > threshold) {
-      return false; // Resource is too far from average
+  // Collect unique numbers for each resource
+  for (const tile of tiles) {
+    if (tile.resource !== "desert" && tile.number !== null) {
+      if (!resourceNumbers.has(tile.resource!)) {
+        resourceNumbers.set(tile.resource!, new Set());
+      }
+      resourceNumbers.get(tile.resource!)!.add(tile.number);
     }
   }
 
-  return true;
+  // Calculate probability for each resource
+  const probabilities = new Map<ResourceType, number>();
+  resourceNumbers.forEach((numbers, resource) => {
+    let totalProbability = 0;
+    numbers.forEach((num) => {
+      totalProbability += getDiceProbability(num);
+    });
+    // Convert to percentage (totalProbability is in 36ths)
+    const percentage = (totalProbability / 36) * 100;
+    probabilities.set(resource, percentage);
+  });
+
+  return probabilities;
+}
+
+function isResourceBalancedBySpread(tiles: HexTile[]): boolean {
+  const probabilities = calculateResourceDropProbability(tiles);
+  const probValues = Array.from(probabilities.values());
+
+  if (probValues.length === 0) return false;
+
+  const maxProb = Math.max(...probValues);
+  const minProb = Math.min(...probValues);
+  const spread = maxProb - minProb;
+
+  // Maximum allowed spread is 12 percentage points
+  return spread <= 12;
 }
 
 function getNeighbors(tile: HexTile, allTiles: HexTile[]): HexTile[] {
@@ -410,8 +436,8 @@ export function generateCatanBoard(): GeneratedBoard | null {
       }
       if (rulesViolated) continue;
 
-      // Check resource probability balance
-      if (!isResourceBalanced(currentTilesWithNumbers)) {
+      // Check resource probability balance (12% max spread)
+      if (!isResourceBalancedBySpread(currentTilesWithNumbers)) {
         continue;
       }
 

@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import CatanBoard from "../src/components/CatanBoard";
+import StatsMenu from "../src/components/StatsMenu";
 import {
   generateCatanBoard,
   type GeneratedBoard,
@@ -158,6 +159,9 @@ export default function Index() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Stats Menu (Top-Left) */}
+        <StatsMenu board={board} />
+
         {/* Board Area */}
         <View style={styles.boardArea}>
           <View style={styles.svgContainer}>

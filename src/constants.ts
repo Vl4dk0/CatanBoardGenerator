@@ -41,17 +41,19 @@ export interface ThemeColors {
   buttonPressedBackground: string;
   svgBackground: string;
   svgBorder: string;
+  panelBackground: string;
 }
 
 // Light theme
 export const lightThemeColors: ThemeColors = {
   background: "#F5FCFF", // Light blue/white
-  text: "#F5FCFF", // Dark gray
+  text: "#333333", // Dark gray for readability
   buttonBackground: "#696969", // Blue
   buttonPressedBackground: "#000000", // Darker Blue
   buttonText: "#FFFFFF", // White
   svgBackground: "#e0f7fa", // Light cyan
   svgBorder: "#cccccc", // Light gray
+  panelBackground: "#FFFFFF", // Pure white for panel
 };
 
 // Dark theme
@@ -63,6 +65,7 @@ export const darkThemeColors: ThemeColors = {
   buttonText: "#121212", // Dark Gray
   svgBackground: "#1f2937", // Dark slate gray
   svgBorder: "#4b5563", // Medium gray
+  panelBackground: "#1E1E1E", // Slightly lighter than background
 };
 
 // SVG rendering config
