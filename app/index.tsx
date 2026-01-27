@@ -19,6 +19,7 @@ import {
   VIEWBOX_WIDTH,
 } from "../src/constants";
 import { useTheme } from "../src/context/ThemeContext";
+import { useBoardQueue } from "../src/hooks/useBoardQueue";
 
 export default function Index() {
   const [board, setBoard] = useState<GeneratedBoard | null>(null);
@@ -26,9 +27,32 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
 
+  // Board Queue Hook
+  const {
+    getNextBoard,
+    queueSize,
+    startBackgroundGeneration,
+    stopBackgroundGeneration,
+  } = useBoardQueue();
+
   // Board Generation
   const generateNewBoard = useCallback(() => {
     console.log("Generating new board...");
+
+    // Try to use pre-generated board first
+    const preGeneratedBoard = getNextBoard();
+
+    if (preGeneratedBoard) {
+      // Instant display from queue!
+      console.log(`Using pre-generated board (${queueSize} remaining)`);
+      setBoard(preGeneratedBoard);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
+    // Fallback to regular synchronous generation
+    console.log("No pre-generated boards, generating synchronously...");
     setIsLoading(true);
     setError(null);
     setBoard(null);
@@ -37,7 +61,7 @@ export default function Index() {
         const startTime = Date.now();
         const newBoard = generateCatanBoard();
         const endTime = Date.now();
-        console.log(`Generation took ${endTime - startTime}ms`);
+        console.log(`Synchronous generation took ${endTime - startTime}ms`);
         if (newBoard) {
           setBoard(newBoard);
           setError(null);
@@ -54,11 +78,33 @@ export default function Index() {
         setIsLoading(false);
       }
     }, 50);
-  }, []);
+  }, [getNextBoard, queueSize]);
 
+  // Generate initial board on mount only
   useEffect(() => {
     generateNewBoard();
-  }, [generateNewBoard]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Start background generation after viewing board for 1 second
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+
+    if (board && !isLoading && !error) {
+      console.log("Board displayed, starting 1-second timer...");
+      timer = setTimeout(() => {
+        console.log("1 second elapsed, starting background generation...");
+        startBackgroundGeneration();
+      }, 1000);
+    }
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      stopBackgroundGeneration();
+    };
+  }, [board, isLoading, error, startBackgroundGeneration, stopBackgroundGeneration]);
 
   const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.background },
@@ -146,7 +192,11 @@ export default function Index() {
               isLoading ? { opacity: 0.5 } : null,
             ]}
           >
-            <Text style={styles.buttonText}>Generate New Board</Text>
+            <Text style={styles.buttonText}>
+              {queueSize > 0
+                ? `Next Board (${queueSize} ready)`
+                : "Generate New Board"}
+            </Text>
           </Pressable>
         </View>
       </View>

@@ -124,6 +124,68 @@ ports.forEach((port) => {
   port.resource = listOfPortsStart[port.id];
 });
 
+function getDiceProbability(number: number): number {
+  const probabilities: Record<number, number> = {
+    2: 1,
+    12: 1,
+    3: 2,
+    11: 2,
+    4: 3,
+    10: 3,
+    5: 4,
+    9: 4,
+    6: 5,
+    8: 5,
+  };
+  return probabilities[number] || 0;
+}
+
+function calculateResourceBalance(
+  tiles: HexTile[],
+): Map<ResourceType, number> {
+  const resourceStats = new Map<
+    ResourceType,
+    { totalProb: number; count: number }
+  >();
+
+  for (const tile of tiles) {
+    if (tile.resource !== "desert" && tile.number !== null) {
+      const stats = resourceStats.get(tile.resource!) || {
+        totalProb: 0,
+        count: 0,
+      };
+      stats.totalProb += getDiceProbability(tile.number);
+      stats.count += 1;
+      resourceStats.set(tile.resource!, stats);
+    }
+  }
+
+  // Return average probability per tile for each resource
+  const averages = new Map<ResourceType, number>();
+  resourceStats.forEach((stats, resource) => {
+    averages.set(resource, stats.totalProb / stats.count);
+  });
+  return averages;
+}
+
+function isResourceBalanced(tiles: HexTile[]): boolean {
+  const averages = calculateResourceBalance(tiles);
+  const avgValues = Array.from(averages.values());
+
+  if (avgValues.length === 0) return false;
+
+  const overallAvg = avgValues.reduce((a, b) => a + b, 0) / avgValues.length;
+  const threshold = overallAvg * 0.2; // 20% variance
+
+  for (const avgProb of avgValues) {
+    if (Math.abs(avgProb - overallAvg) > threshold) {
+      return false; // Resource is too far from average
+    }
+  }
+
+  return true;
+}
+
 function getNeighbors(tile: HexTile, allTiles: HexTile[]): HexTile[] {
   const neighbors: HexTile[] = [];
   const neighborCoords = [
@@ -157,6 +219,17 @@ const MAX_TILE_TRIES_PER_SPOT = 100;
 
 // TODO: optimize value
 const MAX_NUMBER_PHASE_ATTEMPTS = 500;
+
+// Async wrapper for non-blocking generation
+export async function generateCatanBoardAsync(): Promise<GeneratedBoard | null> {
+  return new Promise((resolve) => {
+    // Use setTimeout to yield control to UI thread
+    setTimeout(() => {
+      const board = generateCatanBoard();
+      resolve(board);
+    }, 0);
+  });
+}
 
 export function generateCatanBoard(): GeneratedBoard | null {
   let totalAttempts = 0;
@@ -309,15 +382,11 @@ export function generateCatanBoard(): GeneratedBoard | null {
       }
       if (rulesViolated) continue;
 
-      // no same resource-number pairs
-      // no 6 and 8 on the same tile-type
+      // no same resource-number pairs (exact duplicates)
       const resourceNumberPairs = new Set<string>();
       for (const tile of currentTilesWithNumbers) {
         if (tile.resource !== "desert" && tile.number !== null) {
-          let number =
-            tile.number === 6 || tile.number === 8 ? 100 : tile.number;
-
-          const pair = `${tile.resource}-${number}`;
+          const pair = `${tile.resource}-${tile.number}`;
           if (resourceNumberPairs.has(pair)) {
             rulesViolated = true;
             break;
@@ -341,15 +410,10 @@ export function generateCatanBoard(): GeneratedBoard | null {
       }
       if (rulesViolated) continue;
 
-      // 2 and 12 should be on the same resource
-      const two = currentTilesWithNumbers.find((t) => t.number === 2);
-      const twelve = currentTilesWithNumbers.find((t) => t.number === 12);
-      if (two && twelve) {
-        if (two.resource === twelve.resource) {
-          rulesViolated = true;
-        }
+      // Check resource probability balance
+      if (!isResourceBalanced(currentTilesWithNumbers)) {
+        continue;
       }
-      if (rulesViolated) continue;
 
       numberPlacementSuccess = true;
       finalTiles = currentTilesWithNumbers;

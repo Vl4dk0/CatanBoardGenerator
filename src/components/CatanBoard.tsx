@@ -1,5 +1,4 @@
 import React from "react";
-import { View, StyleSheet } from "react-native"; // StyleSheet might not be needed now
 import Svg from "react-native-svg";
 import { type GeneratedBoard } from "../logic/catanLogic"; // Adjust path
 import HexagonTile from "./HexagonTile"; // Adjust path
