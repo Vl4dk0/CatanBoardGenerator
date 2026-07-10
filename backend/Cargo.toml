@@ -1,0 +1,19 @@
+[package]
+name = "catan-backend"
+version = "0.1.0"
+edition = "2021"
+description = "HTTP service that precomputes balanced Catan boards (port of src/logic/catanLogic.ts)"
+license = "MIT"
+
+[dependencies]
+tiny_http = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+fastrand = "2"
+
+# Small, self-contained binary: this runs on a tight (8 GB) server with no Docker.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
