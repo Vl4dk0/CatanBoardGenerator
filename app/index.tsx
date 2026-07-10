@@ -9,10 +9,8 @@ import {
 } from "react-native";
 import CatanBoard from "../src/components/CatanBoard";
 import StatsMenu from "../src/components/StatsMenu";
-import {
-  generateCatanBoard,
-  type GeneratedBoard,
-} from "../src/logic/catanLogic";
+import { type GeneratedBoard } from "../src/logic/catanLogic";
+import { fetchBoard } from "../src/api/boardApi";
 import {
   HEX_SVG_RADIUS,
   PORT_ELEMENT_BASE_SIZE,
@@ -37,49 +35,34 @@ export default function Index() {
   } = useBoardQueue();
 
   // Board Generation
-  const generateNewBoard = useCallback(() => {
-    console.log("Generating new board...");
-
-    // Try to use pre-generated board first
+  const generateNewBoard = useCallback(async () => {
+    // Try to use a prefetched board first (instant).
     const preGeneratedBoard = getNextBoard();
 
     if (preGeneratedBoard) {
-      // Instant display from queue!
-      console.log(`Using pre-generated board (${queueSize} remaining)`);
       setBoard(preGeneratedBoard);
       setIsLoading(false);
       setError(null);
       return;
     }
 
-    // Fallback to regular synchronous generation
-    console.log("No pre-generated boards, generating synchronously...");
+    // Otherwise fetch one directly from the backend.
     setIsLoading(true);
     setError(null);
     setBoard(null);
-    setTimeout(() => {
-      try {
-        const startTime = Date.now();
-        const newBoard = generateCatanBoard();
-        const endTime = Date.now();
-        console.log(`Synchronous generation took ${endTime - startTime}ms`);
-        if (newBoard) {
-          setBoard(newBoard);
-          setError(null);
-        } else {
-          setError(
-            "Failed to generate a board within the attempt limit. Please try again.",
-          );
-          setBoard(null);
-        }
-      } catch (e: any) {
-        setError(`An error occurred: ${e.message || e}`);
-        setBoard(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 50);
-  }, [getNextBoard, queueSize]);
+    try {
+      const newBoard = await fetchBoard();
+      setBoard(newBoard);
+      setError(null);
+    } catch (e: any) {
+      setError(
+        `Couldn't reach the board service. Please check your connection and try again.\n(${e?.message ?? e})`,
+      );
+      setBoard(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getNextBoard]);
 
   // Generate initial board on mount only
   useEffect(() => {
