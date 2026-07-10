@@ -5,6 +5,9 @@ import type { PropsWithChildren } from "react";
 // web page during static rendering.
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
+//
+// The app is served from the "/catan" subpath. Hand-written absolute asset
+// paths must include that base (the bundler only rewrites paths it manages).
 export default function Root({ children }: PropsWithChildren) {
   return (
     <html lang="en">
@@ -16,32 +19,21 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, shrink-to-fit=no"
         />
 
-        {/* Link the PWA manifest file */}
-        <link rel="manifest" href="/manifest.json" />
-
         <link
-          rel="CatanBalancer48-transparent"
-          sizes="48x48"
-          href="/CatanBalancer48-transparent.png"
-        />
-        <link
-          rel="CatanBalancer120-transparent"
+          rel="apple-touch-icon"
           sizes="120x120"
-          href="/CatanBalancer120-transparent.png"
+          href="/catan/CatanBalancer120-transparent.png"
         />
         <link
-          rel="CatanBalancer152-transparent"
+          rel="apple-touch-icon"
           sizes="152x152"
-          href="/CatanBalancer152-transparent.png"
+          href="/catan/CatanBalancer152-transparent.png"
         />
         <link
-          rel="CatanBalancer180-transparent"
+          rel="apple-touch-icon"
           sizes="180x180"
-          href="/CatanBalancer180-transparent.png"
+          href="/catan/CatanBalancer180-transparent.png"
         />
-
-        {/* Bootstrap the service worker. */}
-        <script dangerouslySetInnerHTML={{ __html: sw }} />
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
@@ -55,15 +47,3 @@ export default function Root({ children }: PropsWithChildren) {
     </html>
   );
 }
-
-const sw = `
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('Service Worker registered with scope:', registration.scope);
-        }).catch(error => {
-            console.error('Service Worker registration failed:', error);
-        });
-    });
-}
-`;

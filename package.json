@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build:web": "expo export -p web && npx workbox-cli generateSW workbox-config.js"
+    "build:web": "expo export -p web"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
