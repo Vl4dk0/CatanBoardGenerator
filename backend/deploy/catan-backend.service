@@ -1,9 +1,9 @@
 # systemd unit for the Catan board backend.
-# Install to /etc/systemd/system/catan-backend.service, then:
+# Install to /etc/systemd/system/catan-backend.service (see README.md), then:
 #   sudo systemctl daemon-reload
-#   sudo systemctl enable --now catan-backend
+#   sudo systemctl enable catan-backend     # the first ./deploy.sh places the binary + starts it
 #
-# Adjust ExecStart if you place the binary elsewhere.
+# The binary is built on the box and installed by deploy.sh at /data/catan/bin/catan-backend.
 
 [Unit]
 Description=Catan board generator backend
@@ -12,7 +12,7 @@ After=network.target
 [Service]
 Environment=PORT=48628
 Environment=POOL_SIZE=16
-ExecStart=/usr/local/bin/catan-backend
+ExecStart=/data/catan/bin/catan-backend
 Restart=on-failure
 RestartSec=2
 
