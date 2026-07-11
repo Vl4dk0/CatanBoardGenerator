@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   Text,
-  ActivityIndicator,
   Pressable,
   SafeAreaView,
 } from "react-native";
@@ -22,34 +21,30 @@ import { useBoardQueue } from "../src/hooks/useBoardQueue";
 
 export default function Index() {
   const [board, setBoard] = useState<GeneratedBoard | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
 
   // Board Queue Hook
   const {
     getNextBoard,
-    queueSize,
     startBackgroundGeneration,
     stopBackgroundGeneration,
   } = useBoardQueue();
 
   // Board Generation
   const generateNewBoard = useCallback(async () => {
-    // Try to use a prefetched board first (instant).
+    // Try to use a prefetched board first (instant swap, no loading state).
     const preGeneratedBoard = getNextBoard();
 
     if (preGeneratedBoard) {
       setBoard(preGeneratedBoard);
-      setIsLoading(false);
       setError(null);
       return;
     }
 
-    // Otherwise fetch one directly from the backend.
-    setIsLoading(true);
+    // Otherwise fetch one directly from the backend. Keep the current board on
+    // screen until the fetch resolves rather than flashing a loading overlay.
     setError(null);
-    setBoard(null);
     try {
       const newBoard = await fetchBoard();
       setBoard(newBoard);
@@ -58,9 +53,6 @@ export default function Index() {
       setError(
         `Couldn't reach the board service. Please check your connection and try again.\n(${e?.message ?? e})`,
       );
-      setBoard(null);
-    } finally {
-      setIsLoading(false);
     }
   }, [getNextBoard]);
 
@@ -74,7 +66,7 @@ export default function Index() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
 
-    if (board && !isLoading && !error) {
+    if (board && !error) {
       console.log("Board displayed, starting 1-second timer...");
       timer = setTimeout(() => {
         console.log("1 second elapsed, starting background generation...");
@@ -88,7 +80,7 @@ export default function Index() {
       }
       stopBackgroundGeneration();
     };
-  }, [board, isLoading, error, startBackgroundGeneration, stopBackgroundGeneration]);
+  }, [board, error, startBackgroundGeneration, stopBackgroundGeneration]);
 
   const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.background },
@@ -130,7 +122,7 @@ export default function Index() {
     },
     buttonPressed: { backgroundColor: colors.buttonPressedBackground },
     buttonText: { color: colors.buttonText, fontSize: 16, fontWeight: "bold" },
-    loadingOrErrorContainer: {
+    errorContainer: {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
@@ -148,12 +140,8 @@ export default function Index() {
         {/* Board Area */}
         <View style={styles.boardArea}>
           <View style={styles.svgContainer}>
-            {isLoading ? (
-              <View style={styles.loadingOrErrorContainer}>
-                <ActivityIndicator size="large" color={colors.text} />
-              </View>
-            ) : error ? (
-              <View style={styles.loadingOrErrorContainer}>
+            {error ? (
+              <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : (
@@ -172,18 +160,12 @@ export default function Index() {
         <View style={styles.buttonArea}>
           <Pressable
             onPress={generateNewBoard}
-            disabled={isLoading}
             style={({ pressed }) => [
               styles.button,
               pressed ? styles.buttonPressed : null,
-              isLoading ? { opacity: 0.5 } : null,
             ]}
           >
-            <Text style={styles.buttonText}>
-              {queueSize > 0
-                ? `Next Board (${queueSize} ready)`
-                : "Generate New Board"}
-            </Text>
+            <Text style={styles.buttonText}>Generate Board</Text>
           </Pressable>
         </View>
       </View>
