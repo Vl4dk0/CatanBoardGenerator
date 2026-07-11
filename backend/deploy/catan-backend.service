@@ -1,0 +1,30 @@
+# systemd unit for the Catan board backend.
+# Install to /etc/systemd/system/catan-backend.service (see README.md), then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable catan-backend     # the first ./deploy.sh places the binary + starts it
+#
+# The binary is built on the box and installed by deploy.sh at /data/catan/bin/catan-backend.
+
+[Unit]
+Description=Catan board generator backend
+After=network.target
+
+[Service]
+Environment=PORT=48628
+Environment=POOL_SIZE=16
+ExecStart=/data/catan/bin/catan-backend
+Restart=on-failure
+RestartSec=2
+
+# Hardening: the service only binds a loopback port and needs no filesystem writes.
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+# Belt-and-suspenders: the app already binds 127.0.0.1 itself.
+IPAddressAllow=localhost
+IPAddressDeny=any
+
+[Install]
+WantedBy=multi-user.target

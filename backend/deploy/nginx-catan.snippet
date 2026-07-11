@@ -1,0 +1,30 @@
+# catan — reverse-proxy snippet for the /catan subpath.
+#
+# PASTE THIS into the EXISTING vladimirjancar.sk :443 `server { }` block in
+#   /etc/nginx/sites-available/vladimirjancar.sk
+# It is NOT a standalone server block — it must live inside that server's braces.
+#
+# Placement is load-bearing: paste it BEFORE the vhost's generic
+#   `location ~ ^/(?<proj>[^/]+)/ { ... }`   SPA-fallback regex.
+#
+# The `^~` prefix is MANDATORY. It tells nginx "if this prefix matches, stop and
+# do NOT evaluate any regex location". Without it, the generic SPA-fallback regex
+# also matches /catan/api/... and would return index.html for API requests
+# instead of proxying them to the backend.
+#
+# The static app itself needs NO nginx change: it is served from
+# /var/www/vladimirjancarsk/catan/ by the vhost's existing per-project
+# convention. This snippet only carves out the API.
+#
+# No DNS record and no new certificate are involved — /catan is a subpath of the
+# already-live vladimirjancar.sk domain and reuses its Let's Encrypt certificate.
+
+# --- REST API -> local Rust backend ----------------------------------------------------
+# Trailing /api/ on proxy_pass strips the /catan prefix: /catan/api/board -> /api/board.
+location ^~ /catan/api/ {
+    proxy_pass http://127.0.0.1:48628/api/;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
